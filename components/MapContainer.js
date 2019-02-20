@@ -1,12 +1,16 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Modal, TextInput } from 'react-native';
-import { MapView, Location, Permissions, PROVIDER_GOOGLE } from 'expo';
+import { MapView, Location, Permissions } from 'expo';
+
+import SearchAddress from './SearchAddress';
+import MapDirections from './MapDirections';
+import config from '../config';
 
 export default class MapContainer extends Component {
 
   state = {
-    longitude: -30,
-    latitude: -51,
+    latitude: -30,
+    longitude: -50,
   }
 
   async componentWillMount(){
@@ -15,15 +19,26 @@ export default class MapContainer extends Component {
       const location = await Location.getCurrentPositionAsync({
         enableHighAccuract: true
       });
-
       this.setState({
-        latitude: Location.coords.latitude,
-        longitude: Location.coords.longitude,
-        latitudeDelta: Location.coords.latitudeDelta,
-        longitudeDelta: Location.coords.longitudeDelta
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       })
     }
   }
+  
+
+    handleLocationSelected = (data, details) => {
+        const { 
+          location: { lat: latitude, lng: longitude }
+        } = details.geometry;
+
+      this.setState({
+        destination: {
+          latitude: latitude,
+          longitude,
+        }
+      })
+    }
 
 
   render() {
@@ -31,18 +46,28 @@ export default class MapContainer extends Component {
       <View style={styles.viewContainer}>
         <MapView 
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
           region={{
             latitude: this.state.latitude,
             longitude: this.state.longitude,
-            latitudeDelta: this.state.latitudeDelta,
-            longitudeDelta: this.state.longitudeDelta
+            latitudeDelta: 0.04,
+            longitudeDelta: 0.05,
           }}
           showsUserLocation={true}
+        >
+        {this.state.destination ? 
+        <MapDirections
+            apiKey={config.apiKey}
+            origin={{
+              latitude: this.state.latitude,
+              longitude: this.state.longitude,
+            }}
+            destination={this.state.destination}
         />
-        <TextInput 
-          style={styles.input}
-          placeholder="Para onde?"
+        : null }
+        </MapView>
+        <SearchAddress
+          apiKey={config.apiKey}
+          onLocationSelected={this.handleLocationSelected}
         />
       </View>
     )
@@ -55,17 +80,5 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1
-  },
-  input: {
-    position: 'absolute',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 30,
-    paddingVertical: 14,
-    color: 'black',
-    top: 60,
-    left: 15,
-    right: 15,
-    elevation: 15,
-    borderRadius: 10
   }
 })
