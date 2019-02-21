@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TextInput } from 'react-native';
 import { MapView, Location, Permissions } from 'expo';
 
 import SearchAddress from './SearchAddress';
+import Popup from './popup';
 import MapDirections from './MapDirections';
 import config from '../config';
 
@@ -36,6 +37,7 @@ export default class MapContainer extends Component {
         destination: {
           latitude: latitude,
           longitude,
+          title: data.structured_formatting.main_text
         }
       })
     }
@@ -44,7 +46,8 @@ export default class MapContainer extends Component {
   render() {
     return (
       <View style={styles.viewContainer}>
-        <MapView 
+        <MapView
+          ref={el => (this.mapView = el)}
           style={styles.map}
           region={{
             latitude: this.state.latitude,
@@ -53,8 +56,10 @@ export default class MapContainer extends Component {
             longitudeDelta: 0.05,
           }}
           showsUserLocation={true}
+          loadingEnabled={true}
         >
-        {this.state.destination ? 
+        {this.state.destination ?
+        <React.Fragment>
         <MapDirections
             apiKey={config.apiKey}
             origin={{
@@ -62,7 +67,32 @@ export default class MapContainer extends Component {
               longitude: this.state.longitude,
             }}
             destination={this.state.destination}
+            onReady={result => {
+              this.setState({ duration: Math.floor(result.duration) });
+              this.mapView.fitToCoordinates(result.coordinates,
+              {
+                edgePadding: {
+                  right: 50,
+                  left: 50,
+                  top: 100,
+                  bottom: 350
+                }
+              })
+            }}
         />
+        <Popup 
+          coordinate={{
+            latitude: this.state.latitude,
+            longitude: this.state.longitude
+          }}
+          location="Minha localização!"
+        />
+        <Popup 
+          coordinate={this.state.destination}
+          location={this.state.destination.title}
+          duration={this.state.duration}
+        />
+        </React.Fragment>
         : null }
         </MapView>
         <SearchAddress
